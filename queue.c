@@ -122,7 +122,31 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
-    return true;
+    if (!head)
+        return false;
+    if (list_empty(head))
+        return false;
+
+    int mid = q_size(head) / 2;
+
+    int len = 0;
+    struct list_head *li;
+
+    list_for_each (li, head) {
+        if (len >= mid) {
+            list_del(li);
+
+            element_t *e = list_entry(li, element_t, list);
+            free(e->value);
+            free(e);
+
+            return true;
+        }
+
+        len++;
+    }
+
+    return false;
 }
 
 /* Delete all nodes that have duplicate string */
