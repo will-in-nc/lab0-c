@@ -15,6 +15,9 @@
 struct list_head *q_new()
 {
     struct list_head *q = (struct list_head *) malloc(sizeof(struct list_head));
+    if (!q)
+        return NULL;
+
     INIT_LIST_HEAD(q);
 
     return q;
@@ -29,8 +32,7 @@ void q_free(struct list_head *head)
     element_t *e, *next;
 
     list_for_each_entry_safe (e, next, head, list) {
-        free(e->value);
-        free(e);
+        q_release_element(e);
     }
 
     free(head);
@@ -43,8 +45,17 @@ bool q_insert_head(struct list_head *head, char *s)
         return false;
 
     element_t *e_new = (element_t *) malloc(sizeof(element_t));
-    INIT_LIST_HEAD(&e_new->list);
+    if (!e_new)
+        return false;
+
     e_new->value = (char *) malloc(sizeof(char) * (strlen(s) + 1));
+    if (!e_new->value) {
+        free(e_new);
+
+        return false;
+    }
+
+    INIT_LIST_HEAD(&e_new->list);
     snprintf(e_new->value, strlen(s) + 1, "%s", s);
 
     list_add(&e_new->list, head);
@@ -59,8 +70,17 @@ bool q_insert_tail(struct list_head *head, char *s)
         return false;
 
     element_t *e_new = (element_t *) malloc(sizeof(element_t));
-    INIT_LIST_HEAD(&e_new->list);
+    if (!e_new)
+        return false;
+
     e_new->value = (char *) malloc(sizeof(char) * (strlen(s) + 1));
+    if (!e_new->value) {
+        free(e_new);
+
+        return false;
+    }
+
+    INIT_LIST_HEAD(&e_new->list);
     snprintf(e_new->value, strlen(s) + 1, "%s", s);
 
     list_add_tail(&e_new->list, head);
@@ -137,8 +157,7 @@ bool q_delete_mid(struct list_head *head)
             list_del(li);
 
             element_t *e = list_entry(li, element_t, list);
-            free(e->value);
-            free(e);
+            q_release_element(e);
 
             return true;
         }
@@ -160,6 +179,25 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
+    if (!head)
+        return;
+    if (list_empty(head))
+        return;
+
+    struct list_head *li = head->next, *next = li->next;
+    while (li != head && next != head) {
+        li->prev->next = next;
+        next->next->prev = li;
+
+        li->next = next->next;
+        next->prev = li->prev;
+        li->prev = next;
+        next->next = li;
+
+        li = li->next;
+        next = li->next;
+    }
+
 }
 
 /* Reverse elements in queue */
