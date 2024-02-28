@@ -23,6 +23,9 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *head)
 {
+    if (!head)
+        return;
+
     element_t *e, *next;
 
     list_for_each_entry_safe (e, next, head, list) {
@@ -36,6 +39,9 @@ void q_free(struct list_head *head)
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+
     element_t *e_new = (element_t *) malloc(sizeof(element_t));
     INIT_LIST_HEAD(&e_new->list);
     e_new->value = (char *) malloc(sizeof(char) * (strlen(s) + 1));
@@ -49,6 +55,9 @@ bool q_insert_head(struct list_head *head, char *s)
 /* Insert an element at tail of queue */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+
     element_t *e_new = (element_t *) malloc(sizeof(element_t));
     INIT_LIST_HEAD(&e_new->list);
     e_new->value = (char *) malloc(sizeof(char) * (strlen(s) + 1));
@@ -62,13 +71,37 @@ bool q_insert_tail(struct list_head *head, char *s)
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head)
+        return NULL;
+    if (list_empty(head))
+        return NULL;
+
+    struct list_head *target_list = head->next;
+    element_t *target_e = list_entry(target_list, element_t, list);
+
+    list_del(target_list);
+
+    snprintf(sp, bufsize, "%s", target_e->value);
+
+    return target_e;
 }
 
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head)
+        return NULL;
+    if (list_empty(head))
+        return NULL;
+
+    struct list_head *target_list = head->prev;
+    element_t *target_e = list_entry(target_list, element_t, list);
+
+    list_del(target_list);
+
+    snprintf(sp, bufsize, "%s", target_e->value);
+
+    return target_e;
 }
 
 /* Return number of elements in queue */
