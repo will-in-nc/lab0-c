@@ -101,7 +101,8 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 
     list_del(target_list);
 
-    snprintf(sp, bufsize, "%s", target_e->value);
+    if (sp != NULL)
+        snprintf(sp, bufsize, "%s", target_e->value);
 
     return target_e;
 }
@@ -119,7 +120,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 
     list_del(target_list);
 
-    snprintf(sp, bufsize, "%s", target_e->value);
+    if (sp != NULL)
+        snprintf(sp, bufsize, "%s", target_e->value);
 
     return target_e;
 }
@@ -186,13 +188,8 @@ void q_swap(struct list_head *head)
 
     struct list_head *li = head->next, *next = li->next;
     while (li != head && next != head) {
-        li->prev->next = next;
-        next->next->prev = li;
-
-        li->next = next->next;
-        next->prev = li->prev;
-        li->prev = next;
-        next->next = li;
+        list_del_init(li);
+        list_add(li, next);
 
         li = li->next;
         next = li->next;
@@ -201,7 +198,20 @@ void q_swap(struct list_head *head)
 }
 
 /* Reverse elements in queue */
-void q_reverse(struct list_head *head) {}
+void q_reverse(struct list_head *head)
+{
+    if (!head)
+        return;
+    if (list_empty(head))
+        return;
+
+    struct list_head *l_head = head->next;
+    while (l_head->next != head) {
+        element_t *t_temp = q_remove_tail(head, NULL, 0);
+        list_add_tail(&t_temp->list, l_head);
+    }
+
+}
 
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
