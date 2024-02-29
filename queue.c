@@ -220,14 +220,7 @@ void q_swap(struct list_head *head)
     if (list_empty(head))
         return;
 
-    struct list_head *li = head->next, *next = li->next;
-    while (li != head && next != head) {
-        list_del_init(li);
-        list_add(li, next);
-
-        li = li->next;
-        next = li->next;
-    }
+    q_reverseK(head, 2);
 
 }
 
@@ -241,8 +234,7 @@ void q_reverse(struct list_head *head)
 
     struct list_head *l_head = head->next;
     while (l_head->next != head) {
-        element_t *t_temp = q_remove_tail(head, NULL, 0);
-        list_add_tail(&t_temp->list, l_head);
+        list_move_tail(head->prev, l_head);
     }
 
 }
@@ -264,16 +256,69 @@ void q_reverseK(struct list_head *head, int k)
             struct list_head *temp = target;
             target = target->next;
 
-            list_del_init(temp);
-            list_add(temp, prev);
+            list_move(temp, prev);
         }
 
         l_head = l_head->next;
     }
 }
 
+struct list_head *merge_sort(struct list_head *head,
+                             struct list_head *tail,
+                             int size,
+                             bool descend)
+{
+    if (size == 1)
+        return head;
+
+    struct list_head *mid = head;
+    int len = 0;
+    while (len < size / 2) {
+        mid = mid->next;
+        len++;
+    }
+
+    int len2 = size - len;
+    struct list_head *l1 = merge_sort(head, mid->prev, len, descend),
+                     *l2 = merge_sort(mid, tail, len2, descend),
+                     *prev = l1->prev, *lhead = prev;
+
+    element_t *e1 = list_entry(l1, element_t, list),
+              *e2 = list_entry(l2, element_t, list);
+
+    while (len > 0 && len2 > 0) {
+        struct list_head *target = NULL;
+        if ((strcmp(e1->value, e2->value) > 0) == descend) {
+            target = &e1->list;
+
+            l1 = l1->next;
+            e1 = list_entry(l1, element_t, list);
+            len--;
+        } else {
+            target = &e2->list;
+
+            l2 = l2->next;
+            e2 = list_entry(l2, element_t, list);
+            len2--;
+        }
+
+        list_move(target, lhead);
+        lhead = target;
+    }
+
+    return prev->next;
+}
+
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head)
+        return;
+    if (list_empty(head))
+        return;
+
+    merge_sort(head->next, head->prev, q_size(head), descend);
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
