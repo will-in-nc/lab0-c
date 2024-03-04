@@ -99,7 +99,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     struct list_head *target_list = head->next;
     element_t *target_e = list_entry(target_list, element_t, list);
 
-    list_del(target_list);
+    list_del_init(target_list);
 
     if (sp != NULL)
         snprintf(sp, bufsize, "%s", target_e->value);
@@ -118,7 +118,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     struct list_head *target_list = head->prev;
     element_t *target_e = list_entry(target_list, element_t, list);
 
-    list_del(target_list);
+    list_del_init(target_list);
 
     if (sp != NULL)
         snprintf(sp, bufsize, "%s", target_e->value);
@@ -185,8 +185,7 @@ bool q_delete_dup(struct list_head *head)
         element_t *e_target = list_entry(target, element_t, list);
         element_t *e_next = list_entry(next, element_t, list);
 
-        int len = strlen(e_target->value);
-        if (strncmp(e_target->value, e_next->value, len) == 0) {
+        if (strcmp(e_target->value, e_next->value) == 0) {
             list_del(next);
             q_release_element(e_next);
 
@@ -400,12 +399,42 @@ int q_merge(struct list_head *head, bool descend)
 
     queue_contex_t *main_q = list_entry(head->next, queue_contex_t, chain);
     queue_contex_t *q, *next;
+    int len = q_size(main_q->q);
+
     list_for_each_entry_safe (q, next, head, chain) {
-        if (q != main_q)
+        if (q != main_q) {
+            struct list_head *l1 = main_q->q->next, *l2 = q->q->next,
+                             *prev = main_q->q, *lhead = prev;
+
+            int len1 = len, len2 = q_size(q->q);
+            len += len2;
+
             list_splice_init(q->q, main_q->q);
+
+            element_t *e1 = list_entry(l1, element_t, list),
+                      *e2 = list_entry(l2, element_t, list);
+
+            while (len1 > 0 && len2 > 0) {
+                struct list_head *target = NULL;
+                if ((strcmp(e1->value, e2->value) > 0) == descend) {
+                    target = &e1->list;
+
+                    l1 = l1->next;
+                    e1 = list_entry(l1, element_t, list);
+                    len1--;
+                } else {
+                    target = &e2->list;
+
+                    l2 = l2->next;
+                    e2 = list_entry(l2, element_t, list);
+                    len2--;
+                }
+
+                list_move(target, lhead);
+                lhead = target;
+            }
+        }
     }
 
-    q_sort(main_q->q, descend);
-
-    return q_size(main_q->q);
+    return len;
 }
